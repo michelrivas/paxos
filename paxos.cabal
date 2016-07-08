@@ -14,7 +14,7 @@ extra-source-files:
 executable paxos
     main-is: Main.hs
     build-depends:
-        base >=4.8 && <4.10,
+        base -any,
         network -any,
         retry -any
         QuickCheck -any,
