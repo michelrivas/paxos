@@ -59,16 +59,19 @@ data Message = Message{
     messageValue :: Int
 }
 
+send :: String -> Handle -> IO ()
 send msg handle = do
     hPutStrLn handle msg
 --    putStrLn $ "Sent: " ++ msg
 
+broadcast :: MVar ServerState -> String -> IO ()
 broadcast config msg = do
     state <- takeMVar config
     let servers = serverList state
     putMVar config state
     broadcastServers config msg servers
 
+broadcastServers :: MVar ServerState -> String -> [Server] -> IO ()
 broadcastServers _ _ [] = return ()
 broadcastServers config msg (server : servers) = do
     send msg (serverHandle server)

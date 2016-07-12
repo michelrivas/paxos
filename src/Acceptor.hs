@@ -26,6 +26,7 @@ import Control.Concurrent.MVar
 import Utils
 
 -- ACCEPTOR
+checkProposal :: MVar ServerState -> Server -> Message -> IO ()
 checkProposal config server msg = do
     state <- takeMVar config
     let prop = highestProposal state
@@ -34,6 +35,7 @@ checkProposal config server msg = do
         LT -> return ()
         _  -> acceptPrepare config server msg
 
+acceptPrepare :: MVar ServerState -> Server -> Message -> IO ()
 acceptPrepare config server msg = do
     threadDelay 5000000
     state <- takeMVar config
@@ -42,6 +44,7 @@ acceptPrepare config server msg = do
     putMVar config newState
     send ("2:" ++ show (proposalNumber state)) (serverHandle server)
 
+checkAccept :: MVar ServerState -> Server -> Message -> IO ()
 checkAccept config server msg = do
     state <- takeMVar config
     let prop = proposalNumber state
@@ -50,6 +53,7 @@ checkAccept config server msg = do
         EQ -> acceptAccept config server msg
         _  -> return ()
 
+acceptAccept :: MVar ServerState -> Server -> Message -> IO ()
 acceptAccept config server msg = do
     threadDelay 5000000
     state <- takeMVar config
@@ -58,6 +62,7 @@ acceptAccept config server msg = do
     putMVar config newState
     send ("4:" ++ show (proposalNumber state)) (serverHandle server)
 
+valueDecided :: MVar ServerState -> Server -> Message -> IO ()
 valueDecided config server msg = do
     threadDelay 5000000
     state <- takeMVar config

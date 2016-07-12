@@ -26,9 +26,11 @@ import Control.Concurrent (forkIO, threadDelay)
 import Utils
 
 -- PROPOSER
+prepareRequest :: MVar ServerState -> String -> IO ()
 prepareRequest config value = do
     broadcast config ("1:" ++ value)
 
+prepareAccepted :: MVar ServerState -> Server -> Message -> IO ()
 prepareAccepted config server msg = do
     state <- takeMVar config
     let quorum = (prepareQuorum state) + 1
@@ -41,6 +43,7 @@ prepareAccepted config server msg = do
         LT -> return ()
         _  -> acceptRequest config
 
+acceptRequest :: MVar ServerState -> IO ()
 acceptRequest config = do
     threadDelay 5000000
     state <- takeMVar config
@@ -48,6 +51,7 @@ acceptRequest config = do
     putMVar config state
     broadcast config ("3:" ++ show value)
 
+acceptAccepted :: MVar ServerState -> Server -> Message -> IO ()
 acceptAccepted config server msg = do
     state <- takeMVar config
     let quorum = (acceptQuorum state) + 1
@@ -59,6 +63,7 @@ acceptAccepted config server msg = do
         LT -> return ()
         _  -> decideValue config
 
+decideValue :: MVar ServerState -> IO ()
 decideValue config = do
     threadDelay 5000000
     state <- takeMVar config

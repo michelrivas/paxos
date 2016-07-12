@@ -55,6 +55,7 @@ main = withSocketsDo $ do
     forkIO $ mainProcess config
     forever $ accept socket >>= forkIO . (handleClientConnection config)
 
+handleClientConnection :: MVar ServerState -> (Handle, String, PortNumber) -> IO ()
 handleClientConnection config (handle, host, portno) = do
     putStrLn "Client connected"
     id <- hGetLine handle
@@ -64,6 +65,7 @@ handleClientConnection config (handle, host, portno) = do
     saveServer config server
     handleClientRequest config server
 
+handleClientRequest :: MVar ServerState -> Server -> IO ()
 handleClientRequest config server = do
     text <- hGetLine $ serverHandle server
     let id = serverID server
@@ -77,10 +79,12 @@ handleClientRequest config server = do
         _   -> putStrLn $ id ++ " says: " ++ text
     handleClientRequest config server
 
+parseMessage :: String -> String -> Message
 parseMessage id text = do 
     let (mType : mValue : _) = splitOn ":" text
     Message {messageType = mType, messageId = id, messageValue = fromIntegral (read mValue :: Int)}
 
+saveServer :: MVar ServerState -> Server -> IO ()
 saveServer config server = do
     let port = portNumber server
     state <- takeMVar config
@@ -95,11 +99,13 @@ saveServer config server = do
         False -> putMVar config state
 
 
+connectServers :: MVar ServerState -> [String] -> IO ()
 connectServers _ [] = return ()
 connectServers config (portno : ports) = do
     forkIO $ connectServer config "localhost" portno
     connectServers config ports
 
+connectServer :: MVar ServerState -> String -> String -> IO ()
 connectServer config host portno = do
     let port = fromIntegral (read portno :: Int)
     putStrLn $ "Connecting to " ++ host ++ ":" ++ portno
@@ -116,6 +122,7 @@ connectServer config host portno = do
             threadDelay 5000000
             connectServer config host portno
 
+checkConnection :: MVar ServerState -> PortNumber -> IO Bool
 checkConnection config port = do
     state <- takeMVar config
     let servers = serverList state
@@ -124,24 +131,29 @@ checkConnection config port = do
         [] -> return False
         _  -> return $ and $ map (\x -> portNumber x == port) servers
 
+checkServer :: PortNumber -> Server -> Bool
 checkServer portno server = do
     portNumber server == portno
 
+testAddress :: String -> PortID -> IO (Maybe Handle)
 testAddress host port = do
     result <- try $ connectTo host port
     case result of
         Left (SomeException e) -> return Nothing
         Right h -> return $ Just h
 
+sendID :: MVar ServerState -> Handle -> IO ()
 sendID config handle = do
     state <- takeMVar config
     send (localID state) handle
     putMVar config state
 
+handShake :: MVar ServerState -> Handle -> IO String
 handShake config handle = do
     sendID config handle
     hGetLine handle
 
+mainProcess :: MVar ServerState -> IO ()
 mainProcess config = do
     line <- getLine
     state <- takeMVar config
