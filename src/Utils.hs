@@ -69,13 +69,13 @@ broadcast config msg = do
     state <- takeMVar config
     let servers = serverList state
     putMVar config state
-    broadcastServers config msg servers
+    broadcastServers msg servers
 
-broadcastServers :: MVar ServerState -> String -> [Server] -> IO ()
-broadcastServers _ _ [] = return ()
-broadcastServers config msg (server : servers) = do
+broadcastServers :: String -> [Server] -> IO ()
+broadcastServers _ [] = return ()
+broadcastServers msg (server : servers) = do
     send msg (serverHandle server)
-    broadcastServers config msg servers
+    broadcastServers msg servers
 
 
 
