@@ -20,12 +20,14 @@ module Utils (
     MessageType,
     Message(..),
     broadcast,
-    send
+    send,
+    parseHostPort
 ) where
 
 import Network (PortID(..), Socket,PortNumber)
 import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
 import Control.Concurrent.MVar
+import Data.List.Split
 
 type ServerID = String
 
@@ -45,6 +47,7 @@ data ServerState = ServerState {
     localID :: ServerID,
     proposalNumber :: Int,
     highestProposal :: Proposal,
+    localHost :: String,
     localPort :: PortNumber,
     prepareQuorum :: Int,
     acceptQuorum :: Int,
@@ -58,6 +61,10 @@ data Message = Message{
     messageId :: ServerID,
     messageValue :: Int
 }
+
+parseHostPort :: String -> (String, String)
+parseHostPort hostPort = (\(x:y:_)->(x,y)) $ splitOn ":" hostPort
+
 
 send :: String -> Handle -> IO ()
 send msg handle = do
