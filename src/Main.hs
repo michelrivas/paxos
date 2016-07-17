@@ -45,11 +45,12 @@ main :: IO ()
 main = withSocketsDo $ do
     args <- getArgs
     id <- newGUID
-    let port = fromIntegral (read $ head args :: Int)
+    let (host, p) = parseHostPort $ head args
+    let port = fromIntegral (read $ p :: Int)
     socket <- listenOn $ PortNumber port
-    putStrLn $ "Listening on " ++ (head args)
+    putStrLn $ "Listening on " ++ host ++ ":" ++ p
     putStrLn $ "ServerID: " ++ id
-    let state = ServerState {localID = id, proposalNumber = 1, localPort = port, serverList = [], prepareQuorum = 0, acceptQuorum = 0, highestProposal = Proposal{proposalID = id, proposalValue = 0}}
+    let state = ServerState {localID = id, proposalNumber = 1, localHost = host, localPort = port, serverList = [], prepareQuorum = 0, acceptQuorum = 0, highestProposal = Proposal{proposalID = id, proposalValue = 0}}
     config <- newMVar state
     forkIO $ connectServers config (tail args)
     forkIO $ mainProcess config
@@ -101,9 +102,10 @@ saveServer config server = do
 
 connectServers :: MVar ServerState -> [String] -> IO ()
 connectServers _ [] = return ()
-connectServers config (portno : ports) = do
-    forkIO $ connectServer config "localhost" portno
-    connectServers config ports
+connectServers config (hostPort : hosts) = do
+    let (host, portno) = parseHostPort hostPort
+    forkIO $ connectServer config host portno
+    connectServers config hosts
 
 connectServer :: MVar ServerState -> String -> String -> IO ()
 connectServer config host portno = do
