@@ -65,10 +65,8 @@ data Message = Message{
 parseHostPort :: String -> (String, String)
 parseHostPort hostPort = (\(x:y:_)->(x,y)) $ splitOn ":" hostPort
 
-
 send :: String -> Handle -> IO ()
-send msg handle = do
-    hPutStrLn handle msg
+send msg handle = hPutStrLn handle msg
 --    putStrLn $ "Sent: " ++ msg
 
 broadcast :: MVar ServerState -> String -> IO ()
@@ -79,12 +77,5 @@ broadcast config msg = do
     broadcastServers msg servers
 
 broadcastServers :: String -> [Server] -> IO ()
-broadcastServers _ [] = return ()
-broadcastServers msg (server : servers) = do
-    send msg (serverHandle server)
-    broadcastServers msg servers
-
-
-
-
+broadcastServers msg servers = mapM_ (\s -> send msg $ serverHandle s) servers
 
