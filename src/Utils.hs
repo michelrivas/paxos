@@ -77,5 +77,5 @@ broadcast config msg = do
     broadcastServers msg servers
 
 broadcastServers :: String -> [Server] -> IO ()
-broadcastServers msg servers = mapM_ (\s -> send msg $ serverHandle s) servers
+broadcastServers msg servers = mapM_ (send msg . serverHandle) servers
 
