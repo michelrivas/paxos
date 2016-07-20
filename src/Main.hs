@@ -126,9 +126,9 @@ connectServer config host portno = do
 
 checkConnection :: MVar ServerState -> PortNumber -> IO Bool
 checkConnection config port = do
-    state <- takeMVar config
+    state <- readMVar config
     let servers = serverList state
-    putMVar config state
+    --putMVar config state
     case servers of
         [] -> return False
         _  -> return $ and $ map (\x -> portNumber x == port) servers
@@ -146,9 +146,9 @@ testAddress host port = do
 
 sendID :: MVar ServerState -> Handle -> IO ()
 sendID config handle = do
-    state <- takeMVar config
+    state <- readMVar config
     send (localID state) handle
-    putMVar config state
+    --putMVar config state
 
 handShake :: MVar ServerState -> Handle -> IO String
 handShake config handle = do

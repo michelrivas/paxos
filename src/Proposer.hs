@@ -46,9 +46,9 @@ prepareAccepted config server msg = do
 acceptRequest :: MVar ServerState -> IO ()
 acceptRequest config = do
     threadDelay 5000000
-    state <- takeMVar config
+    state <- readMVar config
     let value = proposalNumber state
-    putMVar config state
+    --putMVar config state
     broadcast config ("3:" ++ show value)
 
 acceptAccepted :: MVar ServerState -> Server -> Message -> IO ()
@@ -66,9 +66,9 @@ acceptAccepted config server msg = do
 decideValue :: MVar ServerState -> IO ()
 decideValue config = do
     threadDelay 5000000
-    state <- takeMVar config
+    state <- readMVar config
     let value = proposalNumber state
-    putMVar config state
+    --putMVar config state
     broadcast config ("5:" ++ show value)
 
 

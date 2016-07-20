@@ -28,9 +28,9 @@ import Utils
 -- ACCEPTOR
 checkProposal :: MVar ServerState -> Server -> Message -> IO ()
 checkProposal config server msg = do
-    state <- takeMVar config
+    state <- readMVar config
     let prop = highestProposal state
-    putMVar config state
+    --putMVar config state
     case compare (messageValue msg) (proposalValue prop) of 
         LT -> return ()
         _  -> acceptPrepare config server msg
@@ -46,9 +46,9 @@ acceptPrepare config server msg = do
 
 checkAccept :: MVar ServerState -> Server -> Message -> IO ()
 checkAccept config server msg = do
-    state <- takeMVar config
+    state <- readMVar config
     let prop = proposalNumber state
-    putMVar config state
+    --putMVar config state
     case compare (messageValue msg) (prop) of 
         EQ -> acceptAccept config server msg
         _  -> return ()

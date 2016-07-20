@@ -71,9 +71,9 @@ send msg handle = hPutStrLn handle msg
 
 broadcast :: MVar ServerState -> String -> IO ()
 broadcast config msg = do
-    state <- takeMVar config
+    state <- readMVar config
     let servers = serverList state
-    putMVar config state
+    --putMVar config state
     broadcastServers msg servers
 
 broadcastServers :: String -> [Server] -> IO ()
