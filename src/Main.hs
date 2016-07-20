@@ -44,8 +44,9 @@ newGUID = genString
 main :: IO ()
 main = withSocketsDo $ do
     args <- getArgs
+    args <- map parseHostPort <$> getArgs
     id <- newGUID
-    let (host, p) = parseHostPort $ head args
+    let (host, p) = head args
     let port = fromIntegral (read $ p :: Int)
     socket <- listenOn $ PortNumber port
     putStrLn $ "Listening on " ++ host ++ ":" ++ p
@@ -100,10 +101,9 @@ saveServer config server = do
         False -> putMVar config state
 
 
-connectServers :: MVar ServerState -> [String] -> IO ()
+connectServers :: MVar ServerState -> [(String, String)] -> IO ()
 connectServers _ [] = return ()
-connectServers config (hostPort : hosts) = do
-    let (host, portno) = parseHostPort hostPort
+connectServers config ((host, portno) : hosts) = do
     forkIO $ connectServer config host portno
     connectServers config hosts
 
@@ -134,8 +134,7 @@ checkConnection config port = do
         _  -> return $ and $ map (\x -> portNumber x == port) servers
 
 checkServer :: PortNumber -> Server -> Bool
-checkServer portno server = do
-    portNumber server == portno
+checkServer portno server = portNumber server == portno
 
 testAddress :: String -> PortID -> IO (Maybe Handle)
 testAddress host port = do
