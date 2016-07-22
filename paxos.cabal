@@ -10,6 +10,7 @@ category: Network
 author: Michel
 extra-source-files:
     ChangeLog.md
+Tested-With: GHC==7.10.3
 
 executable paxos
     main-is: Main.hs
@@ -25,4 +26,3 @@ executable paxos
         Utils
         Proposer
     ghc-options: -O3 -threaded -with-rtsopts=-N
-
