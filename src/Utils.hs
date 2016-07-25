@@ -21,7 +21,8 @@ module Utils (
     Message(..),
     broadcast,
     send,
-    parseHostPort
+    parseHostPort,
+    parseMessage
 ) where
 
 import Network (PortID(..), Socket,PortNumber)
@@ -63,7 +64,12 @@ data Message = Message{
 }
 
 parseHostPort :: String -> (String, String)
-parseHostPort hostPort = (\(x:y:_)->(x,y)) $ splitOn ":" hostPort
+parseHostPort hostPort = (\(x:y)->(x,head y)) $ splitOn ":" hostPort
+
+parseMessage :: ServerID -> String -> Message
+parseMessage id text = do 
+    let (mType : mValue : _) = splitOn ":" text
+    Message {messageType = mType, messageId = id, messageValue = fromIntegral (read mValue :: Int)}
 
 send :: String -> Handle -> IO ()
 send msg handle = hPutStrLn handle msg

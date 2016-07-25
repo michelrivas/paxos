@@ -13,7 +13,8 @@
 -----------------------------------------------------------------------------
 
 module Main (
-    main
+    main,
+    parseMessage
 ) where
 
 -- This strang looking comment adds code only needed when running the
@@ -78,13 +79,8 @@ handleClientRequest config server = do
         "3" -> checkAccept config server msg
         "4" -> acceptAccepted config server msg
         "5" -> valueDecided config server msg
-        _   -> putStrLn $ id ++ " says: " ++ text
+        _   -> putStrLn text
     handleClientRequest config server
-
-parseMessage :: String -> String -> Message
-parseMessage id text = do 
-    let (mType : mValue : _) = splitOn ":" text
-    Message {messageType = mType, messageId = id, messageValue = fromIntegral (read mValue :: Int)}
 
 saveServer :: MVar ServerState -> Server -> IO ()
 saveServer config server = do
