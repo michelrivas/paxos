@@ -21,7 +21,7 @@ module Proposer (
 ) where
 
 import Control.Concurrent.MVar
-import Control.Concurrent (forkIO, threadDelay)
+--import Control.Concurrent (threadDelay)
 
 import Utils
 
@@ -45,7 +45,7 @@ prepareAccepted config server msg = do
 
 acceptRequest :: MVar ServerState -> IO ()
 acceptRequest config = do
-    threadDelay 5000000
+    --threadDelay 5000000
     state <- readMVar config
     let value = proposalNumber state
     --putMVar config state
@@ -65,7 +65,7 @@ acceptAccepted config server msg = do
 
 decideValue :: MVar ServerState -> IO ()
 decideValue config = do
-    threadDelay 5000000
+    --threadDelay 5000000
     state <- readMVar config
     let value = proposalNumber state
     --putMVar config state
