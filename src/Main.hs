@@ -74,11 +74,21 @@ handleClientRequest config server = do
     let id = serverID server
     let msg = parseMessage id text
     case messageType msg of
-        "1" -> checkProposal config server msg
-        "2" -> prepareAccepted config server msg
-        "3" -> checkAccept config server msg
-        "4" -> acceptAccepted config server msg
-        "5" -> valueDecided config server msg
+        "1" -> (do 
+                    checkProposal config server msg
+                    putStrLn "checkProposal")
+        "2" -> (do
+                    prepareAccepted config server msg
+                    putStrLn "prepareAccepted")
+        "3" -> (do
+                    checkAccept config server msg
+                    putStrLn "checkAccept")
+        "4" -> (do
+                    acceptAccepted config server msg
+                    putStrLn "acceptAccepted")
+        "5" -> (do
+                    valueDecided config server msg
+                    putStrLn "valueDecided")
         _   -> putStrLn text
     handleClientRequest config server
 
