@@ -130,18 +130,6 @@ connectServer config host portno = do
             threadDelay 5000000
             connectServer config host portno
 
-checkConnection :: MVar ServerState -> PortNumber -> IO Bool
-checkConnection config port = do
-    state <- readMVar config
-    let servers = serverList state
-    --putMVar config state
-    case servers of
-        [] -> return False
-        _  -> return $ and $ map (\x -> portNumber x == port) servers
-
-checkServer :: PortNumber -> Server -> Bool
-checkServer portno server = portNumber server == portno
-
 testAddress :: String -> PortID -> IO (Maybe Handle)
 testAddress host port = do
     result <- try $ connectTo host port

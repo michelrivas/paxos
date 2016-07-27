@@ -22,7 +22,8 @@ module Utils (
     broadcast,
     send,
     parseHostPort,
-    parseMessage
+    parseMessage,
+    checkConnection
 ) where
 
 import Network (PortID(..), Socket,PortNumber)
@@ -70,6 +71,12 @@ parseMessage :: ServerID -> String -> Message
 parseMessage id text = do 
     let (mType : mValue : _) = splitOn ":" text
     Message {messageType = mType, messageId = id, messageValue = fromIntegral (read mValue :: Int)}
+
+checkConnection :: PortNumber -> [Server] -> Bool
+checkConnection port servers = do
+    case servers of
+        [] -> False
+        _  -> and $ map (\x -> portNumber x == port) servers
 
 send :: String -> Handle -> IO ()
 send msg handle = hPutStrLn handle msg
