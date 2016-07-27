@@ -154,7 +154,7 @@ mainProcess config = do
     state <- takeMVar config
     let newState = state {proposalNumber = fromIntegral (read line :: Int)}
     putMVar config newState
-    prepareRequest config line
+    broadcast config $ prepareRequest line
     mainProcess config
 
 

@@ -85,9 +85,8 @@ send msg handle = hPutStrLn handle msg
 broadcast :: MVar ServerState -> String -> IO ()
 broadcast config msg = do
     state <- readMVar config
-    let servers = serverList state
     --putMVar config state
-    broadcastServers msg servers
+    broadcastServers msg $ serverList state
 
 broadcastServers :: String -> [Server] -> IO ()
 broadcastServers msg servers = mapM_ (send msg . serverHandle) servers

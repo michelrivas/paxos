@@ -26,9 +26,8 @@ import Control.Concurrent.MVar
 import Utils
 
 -- PROPOSER
-prepareRequest :: MVar ServerState -> String -> IO ()
-prepareRequest config value = do
-    broadcast config ("1:" ++ value)
+prepareRequest :: String -> String
+prepareRequest value = "1:" ++ value
 
 prepareAccepted :: MVar ServerState -> Server -> Message -> IO ()
 prepareAccepted config server msg = do
