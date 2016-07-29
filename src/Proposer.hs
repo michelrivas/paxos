@@ -15,7 +15,6 @@
 module Proposer (
     prepareRequest,
     prepareAccepted,
-    acceptRequest,
     acceptAccepted,
     decideValue
 ) where
@@ -29,26 +28,15 @@ import Utils
 prepareRequest :: String -> String
 prepareRequest value = "1:" ++ value
 
-prepareAccepted :: MVar ServerState -> Server -> Message -> IO ()
-prepareAccepted config server msg = do
-    state <- takeMVar config
+prepareAccepted :: ServerState -> Message -> (ServerState, Maybe String)
+prepareAccepted state msg = do
     let quorum = (prepareQuorum state) + 1
 --  Compare new value with proposed value
     let newState = state {prepareQuorum = quorum, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
-    putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
-    putMVar config newState
     let majority = length (serverList state) `quot` 2 + 1
     case compare quorum majority of
-        LT -> return ()
-        _  -> acceptRequest config
-
-acceptRequest :: MVar ServerState -> IO ()
-acceptRequest config = do
-    --threadDelay 5000000
-    state <- readMVar config
-    let value = proposalNumber state
-    --putMVar config state
-    broadcast config ("3:" ++ show value)
+        LT -> (newState, Nothing)
+        _  -> (newState, Just (("3:" ++) . show $ proposalNumber state))
 
 acceptAccepted :: MVar ServerState -> Server -> Message -> IO ()
 acceptAccepted config server msg = do
@@ -67,7 +55,6 @@ decideValue config = do
     --threadDelay 5000000
     state <- readMVar config
     let value = proposalNumber state
-    --putMVar config state
     broadcast config ("5:" ++ show value)
 
 

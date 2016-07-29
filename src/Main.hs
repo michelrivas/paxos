@@ -32,7 +32,8 @@ import Control.Concurrent.MVar
 import Control.Monad
 import Control.Exception
 import Data.GUID
-import Data.List.Split
+import Data.List.Split(splitOn)
+import Data.Maybe(fromJust)
 
 import Utils
 import Proposer
@@ -78,8 +79,11 @@ handleClientRequest config server = do
                     checkProposal config server msg
                     putStrLn "checkProposal")
         "2" -> (do
-                    prepareAccepted config server msg
-                    putStrLn "prepareAccepted")
+                    state <- takeMVar config
+                    let (prepareState, prepareMsg) = prepareAccepted state msg
+                    putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
+                    putMVar config prepareState
+                    when (prepareMsg /= Nothing) $ (broadcast config $ fromJust prepareMsg))
         "3" -> (do
                     checkAccept config server msg
                     putStrLn "checkAccept")
