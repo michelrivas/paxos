@@ -77,22 +77,30 @@ handleClientRequest config server = do
     case messageType msg of
         "1" -> (do 
                     checkProposal config server msg
-                    putStrLn "checkProposal")
+                    putStrLn "checkProposal"
+                )
         "2" -> (do
                     state <- takeMVar config
                     let (prepareState, prepareMsg) = prepareAccepted state msg
                     putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
                     putMVar config prepareState
-                    when (prepareMsg /= Nothing) $ (broadcast config $ fromJust prepareMsg))
+                    when (prepareMsg /= Nothing) $ (broadcast config $ fromJust prepareMsg)
+                )
         "3" -> (do
                     checkAccept config server msg
-                    putStrLn "checkAccept")
+                    putStrLn "checkAccept"
+                )
         "4" -> (do
-                    acceptAccepted config server msg
-                    putStrLn "acceptAccepted")
+                    state <- takeMVar config
+                    let (acceptState, acceptMsg) = acceptAccepted state msg
+                    putStrLn $ "Accept accepted: " ++ show (messageValue msg)
+                    putMVar config acceptState
+                    when (acceptMsg /= Nothing) $ (broadcast config $ fromJust acceptMsg)
+                )
         "5" -> (do
                     valueDecided config server msg
-                    putStrLn "valueDecided")
+                    putStrLn "valueDecided"
+                )
         _   -> putStrLn text
     handleClientRequest config server
 

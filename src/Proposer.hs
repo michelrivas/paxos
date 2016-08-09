@@ -15,8 +15,7 @@
 module Proposer (
     prepareRequest,
     prepareAccepted,
-    acceptAccepted,
-    decideValue
+    acceptAccepted
 ) where
 
 import Control.Concurrent.MVar
@@ -38,24 +37,14 @@ prepareAccepted state msg = do
         LT -> (newState, Nothing)
         _  -> (newState, Just (("3:" ++) . show $ proposalNumber state))
 
-acceptAccepted :: MVar ServerState -> Server -> Message -> IO ()
-acceptAccepted config server msg = do
-    state <- takeMVar config
+acceptAccepted :: ServerState -> Message -> (ServerState, Maybe String)
+acceptAccepted state msg = do
     let quorum = (acceptQuorum state) + 1
     let newState = state {acceptQuorum = quorum}
-    putStrLn $ "Accept accepted: " ++ show (messageValue msg)
-    putMVar config newState
     let majority = length (serverList state) `quot` 2 + 1
     case compare quorum majority of
-        LT -> return ()
-        _  -> decideValue config
-
-decideValue :: MVar ServerState -> IO ()
-decideValue config = do
-    --threadDelay 5000000
-    state <- readMVar config
-    let value = proposalNumber state
-    broadcast config ("5:" ++ show value)
+        LT -> (newState, Nothing)
+        _  -> (newState, Just (("5:" ++) . show $ proposalNumber state))
 
 
 
