@@ -35,7 +35,7 @@ prepareAccepted state msg = do
     let majority = length (serverList state) `quot` 2 + 1
     case compare quorum majority of
         LT -> (newState, Nothing)
-        _  -> (newState, Just (("3:" ++) . show $ proposalNumber state))
+        _  -> (newState, Just $ ("3:" ++) . show $ proposalNumber state)
 
 acceptAccepted :: ServerState -> Message -> (ServerState, Maybe String)
 acceptAccepted state msg = do
@@ -44,7 +44,7 @@ acceptAccepted state msg = do
     let majority = length (serverList state) `quot` 2 + 1
     case compare quorum majority of
         LT -> (newState, Nothing)
-        _  -> (newState, Just (("5:" ++) . show $ proposalNumber state))
+        _  -> (newState, Just $ ("5:" ++) . show $ proposalNumber state)
 
 
 

@@ -14,35 +14,25 @@
 
 module Acceptor (
     checkProposal,
-    acceptPrepare,
     checkAccept,
     acceptAccept,
     valueDecided
 ) where
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.MVar
+--import Control.Concurrent (threadDelay)
 
 import Utils
 
 -- ACCEPTOR
-checkProposal :: MVar ServerState -> Server -> Message -> IO ()
-checkProposal config server msg = do
-    state <- readMVar config
+checkProposal :: ServerState -> Message -> (ServerState, Maybe String)
+checkProposal state msg = do
     let prop = highestProposal state
     --putMVar config state
-    case compare (messageValue msg) (proposalValue prop) of 
-        LT -> return ()
-        _  -> acceptPrepare config server msg
-
-acceptPrepare :: MVar ServerState -> Server -> Message -> IO ()
-acceptPrepare config server msg = do
-    threadDelay 5000000
-    state <- takeMVar config
     let newState = state {proposalNumber = messageValue msg, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
-    putStrLn $ "Accepted prepare: " ++ show (messageValue msg)
-    putMVar config newState
-    send ("2:" ++ show (proposalNumber state)) (serverHandle server)
+    case compare (messageValue msg) (proposalValue prop) of 
+        LT -> (state, Nothing)
+        _  -> (newState, Just $ ("2:" ++) . show $ proposalNumber state)
 
 checkAccept :: MVar ServerState -> Server -> Message -> IO ()
 checkAccept config server msg = do
@@ -55,7 +45,7 @@ checkAccept config server msg = do
 
 acceptAccept :: MVar ServerState -> Server -> Message -> IO ()
 acceptAccept config server msg = do
-    threadDelay 5000000
+--    threadDelay 5000000
     state <- takeMVar config
     let newState = state {proposalNumber = messageValue msg, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
     putStrLn $ "Accepted accept: " ++ show (messageValue msg)
@@ -64,7 +54,7 @@ acceptAccept config server msg = do
 
 valueDecided :: MVar ServerState -> Server -> Message -> IO ()
 valueDecided config server msg = do
-    threadDelay 5000000
+--    threadDelay 5000000
     state <- takeMVar config
     let newState = state {proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = 0}}
     putStrLn $ "Final value: " ++ show (proposalNumber state)

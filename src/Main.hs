@@ -76,8 +76,11 @@ handleClientRequest config server = do
     let msg = parseMessage id text
     case messageType msg of
         "1" -> (do 
-                    checkProposal config server msg
-                    putStrLn "checkProposal"
+                    state <- takeMVar config
+                    let (proposalState, proposalMsg) = checkProposal state msg
+                    putStrLn $ "Accepted prepare: " ++ show (messageValue msg)
+                    putMVar config proposalState
+                    when (proposalMsg /= Nothing) $ (send (fromJust proposalMsg) $ serverHandle server)
                 )
         "2" -> (do
                     state <- takeMVar config
