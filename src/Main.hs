@@ -90,15 +90,18 @@ handleClientRequest config server = do
                     when (prepareMsg /= Nothing) $ (broadcast config $ fromJust prepareMsg)
                 )
         "3" -> (do
-                    checkAccept config server msg
-                    putStrLn "checkAccept"
+                    state <- takeMVar config
+                    let (acceptState, acceptMsg) = checkAccept state msg
+                    putStrLn $ "Accepted accept: " ++ show (messageValue msg)
+                    putMVar config acceptState
+                    when (acceptMsg /= Nothing) $ (send (fromJust acceptMsg) $ serverHandle server)
                 )
         "4" -> (do
                     state <- takeMVar config
-                    let (acceptState, acceptMsg) = acceptAccepted state msg
+                    let (acceptedState, acceptedMsg) = acceptAccepted state msg
                     putStrLn $ "Accept accepted: " ++ show (messageValue msg)
-                    putMVar config acceptState
-                    when (acceptMsg /= Nothing) $ (broadcast config $ fromJust acceptMsg)
+                    putMVar config acceptedState
+                    when (acceptedMsg /= Nothing) $ (broadcast config $ fromJust acceptedMsg)
                 )
         "5" -> (do
                     valueDecided config server msg

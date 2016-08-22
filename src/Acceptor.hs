@@ -15,7 +15,6 @@
 module Acceptor (
     checkProposal,
     checkAccept,
-    acceptAccept,
     valueDecided
 ) where
 
@@ -34,23 +33,14 @@ checkProposal state msg = do
         LT -> (state, Nothing)
         _  -> (newState, Just $ ("2:" ++) . show $ proposalNumber state)
 
-checkAccept :: MVar ServerState -> Server -> Message -> IO ()
-checkAccept config server msg = do
-    state <- readMVar config
+checkAccept :: ServerState -> Message -> (ServerState, Maybe String)
+checkAccept state msg = do
     let prop = proposalNumber state
     --putMVar config state
-    case compare (messageValue msg) (prop) of 
-        EQ -> acceptAccept config server msg
-        _  -> return ()
-
-acceptAccept :: MVar ServerState -> Server -> Message -> IO ()
-acceptAccept config server msg = do
---    threadDelay 5000000
-    state <- takeMVar config
     let newState = state {proposalNumber = messageValue msg, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
-    putStrLn $ "Accepted accept: " ++ show (messageValue msg)
-    putMVar config newState
-    send ("4:" ++ show (proposalNumber state)) (serverHandle server)
+    case compare (messageValue msg) (prop) of 
+        EQ -> (newState, Just $ ("4:" ++) . show $ proposalNumber state)
+        _  -> (state, Nothing)
 
 valueDecided :: MVar ServerState -> Server -> Message -> IO ()
 valueDecided config server msg = do
