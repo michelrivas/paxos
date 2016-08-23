@@ -42,13 +42,8 @@ checkAccept state msg = do
         EQ -> (newState, Just $ ("4:" ++) . show $ proposalNumber state)
         _  -> (state, Nothing)
 
-valueDecided :: MVar ServerState -> Server -> Message -> IO ()
-valueDecided config server msg = do
---    threadDelay 5000000
-    state <- takeMVar config
-    let newState = state {proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = 0}}
-    putStrLn $ "Final value: " ++ show (proposalNumber state)
-    putMVar config newState
+valueDecided :: ServerState -> Message -> ServerState
+valueDecided state msg = state {proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = 0}}
 
 
 

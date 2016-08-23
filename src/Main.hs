@@ -104,8 +104,10 @@ handleClientRequest config server = do
                     when (acceptedMsg /= Nothing) $ (broadcast config $ fromJust acceptedMsg)
                 )
         "5" -> (do
-                    valueDecided config server msg
-                    putStrLn "valueDecided"
+                    state <- takeMVar config
+                    let decidedState = valueDecided state msg
+                    putStrLn $ "Final value: " ++ show (proposalNumber state)
+                    putMVar config decidedState
                 )
         _   -> putStrLn text
     handleClientRequest config server
