@@ -87,7 +87,7 @@ handleClientRequest config server = do
                     let (prepareState, prepareMsg) = prepareAccepted state msg
                     putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
                     putMVar config prepareState
-                    when (prepareMsg /= Nothing) $ (broadcast config $ fromJust prepareMsg)
+                    when (prepareMsg /= Nothing) $ (broadcast prepareState $ fromJust prepareMsg)
                 )
         "3" -> (do
                     state <- takeMVar config
@@ -101,7 +101,7 @@ handleClientRequest config server = do
                     let (acceptedState, acceptedMsg) = acceptAccepted state msg
                     putStrLn $ "Accept accepted: " ++ show (messageValue msg)
                     putMVar config acceptedState
-                    when (acceptedMsg /= Nothing) $ (broadcast config $ fromJust acceptedMsg)
+                    when (acceptedMsg /= Nothing) $ (broadcast acceptedState $ fromJust acceptedMsg)
                 )
         "5" -> (do
                     state <- takeMVar config
@@ -174,7 +174,7 @@ mainProcess config = do
     state <- takeMVar config
     let newState = state {proposalNumber = fromIntegral (read line :: Int)}
     putMVar config newState
-    broadcast config $ prepareRequest line
+    broadcast newState $ prepareRequest line
     mainProcess config
 
 
