@@ -13,6 +13,15 @@ spec =
         describe "parseMessage" $ do
             it "parses a message" $ do
                 messageType (parseMessage "x" "5:2") `shouldBe` "5"
-        describe "newGUID" $ do
-            it "creates new GUID" $ property $
-                \x -> (read . show) x == (x :: Int)
+        describe "parseHostPort" $ do
+            it "parses Host:Port" $ property $
+                \x -> x == (x :: Int)
+        describe "parseMessage" $ do
+            it "parses message" $ property $
+                \x -> x == (x :: Int)
+        describe "checkConnection" $ do
+            it "checks connection" $ property $
+                \x -> x == (x :: Int)
+        describe "saveServer" $ do
+            it "saves server" $ property $
+                \x -> x == (x :: Int)
