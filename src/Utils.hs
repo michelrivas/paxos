@@ -23,7 +23,8 @@ module Utils (
     send,
     parseHostPort,
     parseMessage,
-    checkConnection
+    checkConnection,
+    saveServer
 ) where
 
 import Network (PortID(..), Socket,PortNumber)
@@ -77,6 +78,15 @@ checkConnection port servers = do
     case servers of
         [] -> False
         _  -> and $ map (\x -> portNumber x == port) servers
+
+saveServer :: ServerState -> Server -> ServerState
+saveServer state server = do
+    let port = portNumber server
+    let servers = serverList state
+    let isConnected = (length servers > 0) && (and $ map (\x -> portNumber x == port) servers)
+    case not isConnected of 
+        True -> state { serverList = server : servers}
+        False -> state
 
 send :: String -> Handle -> IO ()
 send msg handle = hPutStrLn handle msg

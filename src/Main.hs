@@ -64,9 +64,11 @@ handleClientConnection config (handle, host, portno) = do
     putStrLn "Client connected"
     id <- hGetLine handle
     putStrLn $ "ID: " ++ id
-    sendID config handle
+    state <- readMVar config
+    sendID state handle
     let server = Server {serverID = id, serverHandle = handle, hostName = host, portNumber = portno}
-    saveServer config server
+    serverState <- takeMVar config
+    putMVar config $ saveServer serverState server
     handleClientRequest config server
 
 handleClientRequest :: MVar ServerState -> Server -> IO ()
@@ -112,21 +114,6 @@ handleClientRequest config server = do
         _   -> putStrLn text
     handleClientRequest config server
 
-saveServer :: MVar ServerState -> Server -> IO ()
-saveServer config server = do
-    let port = portNumber server
-    state <- takeMVar config
-    let servers = serverList state
-    let isConnected = (length servers > 0) && (and $ map (\x -> portNumber x == port) servers)
-    putStrLn $ "isConnected: " ++ show isConnected
-    case not isConnected of 
-        True -> (do
-            let newState = state { serverList = server : servers}
-            putMVar config newState
-            putStrLn $ "Servers: " ++ show (1 + length servers))
-        False -> putMVar config state
-
-
 connectServers :: MVar ServerState -> [(String, String)] -> IO ()
 connectServers _ [] = return ()
 connectServers config ((host, portno) : hosts) = do
@@ -140,9 +127,12 @@ connectServer config host portno = do
     result <- testAddress host (PortNumber port)
     case result of
         Just handle -> do
-            id <- handShake config handle
+            state <- readMVar config
+            id <- handShake state handle
             let server = Server {serverID = id, serverHandle = handle, hostName = host, portNumber = port}
-            saveServer config server
+            serverState <- takeMVar config
+            putMVar config $ saveServer serverState server
+            putStrLn $ "Servers: " ++ show (1 + (length $ serverList state))
             putStrLn $ "Connected to " ++ host ++ ":" ++ portno
             handleClientRequest config server
         Nothing -> do
@@ -157,15 +147,12 @@ testAddress host port = do
         Left (SomeException e) -> return Nothing
         Right h -> return $ Just h
 
-sendID :: MVar ServerState -> Handle -> IO ()
-sendID config handle = do
-    state <- readMVar config
-    send (localID state) handle
-    --putMVar config state
+sendID :: ServerState -> (Handle -> IO ())
+sendID state = send (localID state)
 
-handShake :: MVar ServerState -> Handle -> IO String
-handShake config handle = do
-    sendID config handle
+handShake :: ServerState -> Handle -> IO String
+handShake state handle = do
+    sendID state handle
     hGetLine handle
 
 mainProcess :: MVar ServerState -> IO ()
