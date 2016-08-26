@@ -5,7 +5,6 @@ import Test.QuickCheck
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 import Main ()
-import Utils (parseMessage, Message(..), ServerID)
 
 -- | Required for auto-discovery.
 spec :: Spec
