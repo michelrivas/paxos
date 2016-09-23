@@ -13,8 +13,7 @@
 -----------------------------------------------------------------------------
 
 module Main (
-    main,
-    parseMessage
+    main
 ) where
 
 -- This strang looking comment adds code only needed when running the
@@ -40,11 +39,11 @@ import Proposer
 import Acceptor
 
 
---| newGUID
+-- | newGUID
 newGUID :: IO String
 newGUID = genString
 
---| main
+-- | main
 main :: IO ()
 main = withSocketsDo $ do
     args <- getArgs
@@ -55,13 +54,23 @@ main = withSocketsDo $ do
     socket <- listenOn $ PortNumber port
     putStrLn $ "Listening on " ++ host ++ ":" ++ p
     putStrLn $ "ServerID: " ++ id
-    let state = ServerState {localID = id, proposalNumber = 1, localHost = host, localPort = port, serverList = [], prepareQuorum = 0, acceptQuorum = 0, highestProposal = Proposal{proposalID = id, proposalValue = 0}}
+    let state = ServerState {
+                    localID = id, 
+                    proposalNumber = 1, 
+                    localHost = host, 
+                    localPort = port, 
+                    serverList = [], 
+                    prepareQuorum = 0, 
+                    acceptQuorum = 0, 
+                    learnedValues = [], 
+                    highestProposal = Proposal{proposalID = id, proposalValue = 0}
+                }
     config <- newMVar state
     forkIO $ connectServers config (tail args)
     forkIO $ mainProcess config
     forever $ accept socket >>= forkIO . (handleClientConnection config)
 
---| handleClientConnection
+-- | handleClientConnection
 handleClientConnection :: MVar ServerState -> (Handle, String, PortNumber) -> IO ()
 handleClientConnection config (handle, host, portno) = do
     putStrLn "Client connected"
@@ -74,7 +83,7 @@ handleClientConnection config (handle, host, portno) = do
     putMVar config $ saveServer serverState server
     handleClientRequest config server
 
---| handleClientRequest
+-- | handleClientRequest
 handleClientRequest :: MVar ServerState -> Server -> IO ()
 handleClientRequest config server = do
     text <- hGetLine $ serverHandle server
@@ -84,48 +93,55 @@ handleClientRequest config server = do
         "1" -> (do 
                     state <- takeMVar config
                     let (proposalState, proposalMsg) = checkProposal state msg
-                    putStrLn $ "Accepted prepare: " ++ show (messageValue msg)
                     putMVar config proposalState
                     when (proposalMsg /= Nothing) $ (send (fromJust proposalMsg) $ serverHandle server)
+                    putStrLn $ "Accepted prepare: " ++ show (messageValue msg)
                 )
         "2" -> (do
                     state <- takeMVar config
                     let (prepareState, prepareMsg) = prepareAccepted state msg
-                    putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
                     putMVar config prepareState
                     when (prepareMsg /= Nothing) $ (broadcast prepareState $ fromJust prepareMsg)
+                    putStrLn $ "Prepare accepted: " ++ show (messageValue msg)
                 )
         "3" -> (do
                     state <- takeMVar config
                     let (acceptState, acceptMsg) = checkAccept state msg
-                    putStrLn $ "Accepted accept: " ++ show (messageValue msg)
                     putMVar config acceptState
                     when (acceptMsg /= Nothing) $ (send (fromJust acceptMsg) $ serverHandle server)
+                    putStrLn $ "Accepted accept: " ++ show (messageValue msg)
                 )
         "4" -> (do
                     state <- takeMVar config
                     let (acceptedState, acceptedMsg) = acceptAccepted state msg
-                    putStrLn $ "Accept accepted: " ++ show (messageValue msg)
-                    putMVar config acceptedState
-                    when (acceptedMsg /= Nothing) $ (broadcast acceptedState $ fromJust acceptedMsg)
+                    case acceptedMsg of
+                        Just m ->  (do
+                                        putMVar config acceptedState {learnedValues = (messageValue msg) : (learnedValues acceptedState)}
+                                        broadcast acceptedState m
+                                        putStrLn $ "P: " ++ show (learnedValues acceptedState)
+                                    )
+                        Nothing -> (do
+                                        putMVar config acceptedState
+                                        putStrLn $ "Accepted accepted: " ++ show (messageValue msg)
+                                    )
                 )
         "5" -> (do
                     state <- takeMVar config
                     let decidedState = valueDecided state msg
-                    putStrLn $ "Final value: " ++ show (proposalNumber state)
                     putMVar config decidedState
+                    putStrLn $ "A: " ++ show (learnedValues decidedState)
                 )
         _   -> putStrLn text
     handleClientRequest config server
 
---| connectServers
+-- | connectServers
 connectServers :: MVar ServerState -> [(String, String)] -> IO ()
 connectServers _ [] = return ()
 connectServers config ((host, portno) : hosts) = do
     forkIO $ connectServer config host portno
     connectServers config hosts
 
---| connectServer
+-- | connectServer
 connectServer :: MVar ServerState -> String -> String -> IO ()
 connectServer config host portno = do
     let port = fromIntegral (read portno :: Int)
@@ -146,7 +162,7 @@ connectServer config host portno = do
             threadDelay 5000000
             connectServer config host portno
 
---| testAddress
+-- | testAddress
 testAddress :: String -> PortID -> IO (Maybe Handle)
 testAddress host port = do
     result <- try $ connectTo host port
@@ -154,17 +170,17 @@ testAddress host port = do
         Left (SomeException e) -> return Nothing
         Right h -> return $ Just h
 
---| sendID
+-- | sendID
 sendID :: ServerState -> (Handle -> IO ())
 sendID state = send (localID state)
 
---| handShake
+-- | handShake
 handShake :: ServerState -> Handle -> IO String
 handShake state handle = do
     sendID state handle
     hGetLine handle
 
---| mainProcess
+-- | mainProcess
 mainProcess :: MVar ServerState -> IO ()
 mainProcess config = do
     line <- getLine

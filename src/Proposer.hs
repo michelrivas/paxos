@@ -24,11 +24,11 @@ import Control.Concurrent.MVar
 import Utils
 
 -- PROPOSER
---| prepareRequest
+-- | prepareRequest
 prepareRequest :: String -> String
 prepareRequest value = "1:" ++ value
 
---| prepareAccepted
+-- | prepareAccepted
 prepareAccepted :: ServerState -> Message -> (ServerState, Maybe String)
 prepareAccepted state msg = do
     let quorum = (prepareQuorum state) + 1
@@ -39,7 +39,7 @@ prepareAccepted state msg = do
         LT -> (newState, Nothing)
         _  -> (newState, Just $ ("3:" ++) . show $ proposalNumber state)
 
---| acceptAccepted
+-- | acceptAccepted
 acceptAccepted :: ServerState -> Message -> (ServerState, Maybe String)
 acceptAccepted state msg = do
     let quorum = (acceptQuorum state) + 1

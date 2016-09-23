@@ -24,7 +24,7 @@ import Control.Concurrent.MVar
 import Utils
 
 -- ACCEPTOR
---| checkProposal
+-- | checkProposal
 checkProposal :: ServerState -> Message -> (ServerState, Maybe String)
 checkProposal state msg = do
     let prop = highestProposal state
@@ -33,7 +33,7 @@ checkProposal state msg = do
         LT -> (state, Nothing)
         _  -> (newState, Just $ ("2:" ++) . show $ proposalNumber state)
 
---| checkAccept
+-- | checkAccept
 checkAccept :: ServerState -> Message -> (ServerState, Maybe String)
 checkAccept state msg = do
     let prop = proposalNumber state
@@ -42,9 +42,9 @@ checkAccept state msg = do
         EQ -> (newState, Just $ ("4:" ++) . show $ proposalNumber state)
         _  -> (state, Nothing)
 
---| valueDecided
+-- | valueDecided
 valueDecided :: ServerState -> Message -> ServerState
-valueDecided state msg = state {proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = messageValue msg}}
+valueDecided state msg = state {learnedValues = (messageValue msg) : (learnedValues state), proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = messageValue msg}}
 
 
 
