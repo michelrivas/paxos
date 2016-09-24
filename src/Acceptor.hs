@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 --
--- Module      :  Proposer
+-- Module      :  Acceptor
 -- Copyright   :
 -- License     :  BSD3
 --
@@ -8,7 +8,7 @@
 -- Stability   :
 -- Portability :
 --
--- |
+-- | Paxos Acceptor
 --
 -----------------------------------------------------------------------------
 
@@ -24,27 +24,49 @@ import Control.Concurrent.MVar
 import Utils
 
 -- ACCEPTOR
--- | checkProposal
+-- | Phase 1b
+-- | The acceptor checks a proposal
 checkProposal :: ServerState -> Message -> (ServerState, Maybe String)
 checkProposal state msg = do
-    let prop = highestProposal state
-    let newState = state {proposalNumber = messageValue msg, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
-    case compare (messageValue msg) (proposalValue prop) of 
+    let value = messageValue msg
+    let newState = state {
+        proposalNumber = value, 
+        highestProposal = Proposal {
+            proposalID = messageId msg, 
+            proposalValue = value
+        }
+    }
+    case compare value (proposalValue $ highestProposal state) of 
         LT -> (state, Nothing)
-        _  -> (newState, Just $ ("2:" ++) . show $ proposalNumber state)
+        _  -> (newState, Just $ "2:" ++ show value)
 
--- | checkAccept
+-- | Phase 2b
+-- | The acceptor accepts a proposal
 checkAccept :: ServerState -> Message -> (ServerState, Maybe String)
 checkAccept state msg = do
-    let prop = proposalNumber state
-    let newState = state {proposalNumber = messageValue msg, highestProposal = Proposal {proposalID = messageId msg, proposalValue = messageValue msg}}
-    case compare (messageValue msg) (prop) of 
-        EQ -> (newState, Just $ ("4:" ++) . show $ proposalNumber state)
+    let value = messageValue msg
+    let newState = state {
+        proposalNumber = value, 
+        highestProposal = Proposal {
+            proposalID = messageId msg, 
+            proposalValue = value
+        }
+    }
+    case compare value (proposalNumber state) of 
+        EQ -> (newState, Just $ "4:" ++ show value)
         _  -> (state, Nothing)
 
--- | valueDecided
+-- | Phase 3
+-- | The acceptor (in this case acts as learner) learns a value
 valueDecided :: ServerState -> Message -> ServerState
-valueDecided state msg = state {learnedValues = (messageValue msg) : (learnedValues state), proposalNumber = 0, highestProposal = Proposal {proposalID = localID state, proposalValue = messageValue msg}}
+valueDecided state msg = state {
+    learnedValues = (messageValue msg) : (learnedValues state), 
+    proposalNumber = 0, 
+    highestProposal = Proposal {
+        proposalID = localID state, 
+        proposalValue = messageValue msg
+    }
+}
 
 
 

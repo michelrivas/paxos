@@ -8,7 +8,7 @@
 -- Stability   :
 -- Portability :
 --
--- |
+-- | Utility functions and data types
 --
 -----------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ module Utils (
     send,
     parseHostPort,
     parseMessage,
-    checkConnection,
+    majority,
     saveServer
 ) where
 
@@ -32,10 +32,12 @@ import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
 import Control.Concurrent.MVar
 import Data.List.Split
 
--- | type ServerID
+
+-- | ServerID alias to String
 type ServerID = String
 
--- | data Server
+
+-- | Server data type
 data Server = Server {
     serverID :: ServerID,
     serverHandle :: Handle,
@@ -43,13 +45,15 @@ data Server = Server {
     portNumber :: PortNumber
 }
 
--- | data Proposal
+
+-- | Proposal data type
 data Proposal = Proposal {
     proposalID :: ServerID,
     proposalValue :: Int
 }
 
--- | data ServerState
+
+-- | Server state data type
 data ServerState = ServerState {
     localID :: ServerID,
     proposalNumber :: Int,
@@ -62,34 +66,41 @@ data ServerState = ServerState {
     learnedValues :: [Int]
 }
 
--- | type MessageType
+
+-- | MessageType alias to string
 type MessageType = String
 
--- | data Message
+
+-- | Message data type
 data Message = Message{
     messageType :: MessageType,
     messageId :: ServerID,
     messageValue :: Int
 }
 
--- | parseHostPort
+
+-- | Parses a string in the form "host:port" into a tuple (host, port)
 parseHostPort :: String -> (String, String)
-parseHostPort hostPort = (\(x:y)->(x,head y)) $ splitOn ":" hostPort
+parseHostPort hostPort = (\(host : port) ->
+    (host, head port)) $ splitOn ":" hostPort
 
--- | parseMessage
+
+-- | Parses a String into a Message
 parseMessage :: ServerID -> String -> Message
-parseMessage id text = do 
-    let (mType : mValue : _) = splitOn ":" text
-    Message {messageType = mType, messageId = id, messageValue = fromIntegral (read mValue :: Int)}
+parseMessage id text = (\(mType : mValue) -> 
+    Message {
+        messageType = mType, 
+        messageId = id, 
+        messageValue = fromIntegral (read $ head mValue :: Int)
+    }) $ splitOn ":" text
 
--- | checkConnection
-checkConnection :: PortNumber -> [Server] -> Bool
-checkConnection port servers = do
-    case servers of
-        [] -> False
-        _  -> and $ map (\x -> portNumber x == port) servers
 
--- | saveServer
+-- | Calculates the majority of the server set
+majority :: ServerState -> Int
+majority state = length (serverList state) `quot` 2 + 1
+
+
+-- | Saves a server into the list of servers
 saveServer :: ServerState -> Server -> ServerState
 saveServer state server = do
     let port = portNumber server
@@ -99,15 +110,18 @@ saveServer state server = do
         True -> state { serverList = server : servers}
         False -> state
 
--- | send
+
+-- | Sends a message to a client
 send :: String -> Handle -> IO ()
 send msg handle = hPutStrLn handle msg
 
--- | broadcast
+
+-- | Sends a message to all the servers
 broadcast :: ServerState -> String -> IO ()
 broadcast state msg = broadcastServers msg $ serverList state
 
--- | broadcastServers
+
+-- | Sends a message to all the servers
 broadcastServers :: String -> [Server] -> IO ()
 broadcastServers msg servers = mapM_ (send msg . serverHandle) servers
 

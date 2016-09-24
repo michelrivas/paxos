@@ -39,11 +39,12 @@ import Proposer
 import Acceptor
 
 
--- | newGUID
+-- | Generates a GUID for node IDs
 newGUID :: IO String
 newGUID = genString
 
--- | main
+
+-- | Main server thread
 main :: IO ()
 main = withSocketsDo $ do
     args <- getArgs
@@ -55,35 +56,45 @@ main = withSocketsDo $ do
     putStrLn $ "Listening on " ++ host ++ ":" ++ p
     putStrLn $ "ServerID: " ++ id
     let state = ServerState {
-                    localID = id, 
-                    proposalNumber = 1, 
-                    localHost = host, 
-                    localPort = port, 
-                    serverList = [], 
-                    prepareQuorum = 0, 
-                    acceptQuorum = 0, 
-                    learnedValues = [], 
-                    highestProposal = Proposal{proposalID = id, proposalValue = 0}
-                }
+        localID = id, 
+        proposalNumber = 1, 
+        localHost = host, 
+        localPort = port, 
+        serverList = [], 
+        prepareQuorum = 0, 
+        acceptQuorum = 0, 
+        learnedValues = [], 
+        highestProposal = Proposal{
+            proposalID = id, 
+            proposalValue = 0
+        }
+    }
     config <- newMVar state
     forkIO $ connectServers config (tail args)
     forkIO $ mainProcess config
     forever $ accept socket >>= forkIO . (handleClientConnection config)
 
--- | handleClientConnection
+
+-- | Set up listening channel for one client
 handleClientConnection :: MVar ServerState -> (Handle, String, PortNumber) -> IO ()
 handleClientConnection config (handle, host, portno) = do
     putStrLn "Client connected"
     id <- hGetLine handle
     putStrLn $ "ID: " ++ id
     state <- readMVar config
-    sendID state handle
-    let server = Server {serverID = id, serverHandle = handle, hostName = host, portNumber = portno}
+    send (localID state) handle
+    let server = Server {
+        serverID = id, 
+        serverHandle = handle, 
+        hostName = host, 
+        portNumber = portno
+    }
     serverState <- takeMVar config
     putMVar config $ saveServer serverState server
     handleClientRequest config server
 
--- | handleClientRequest
+
+-- | Listening channel thread between one client and the server
 handleClientRequest :: MVar ServerState -> Server -> IO ()
 handleClientRequest config server = do
     text <- hGetLine $ serverHandle server
@@ -116,7 +127,9 @@ handleClientRequest config server = do
                     let (acceptedState, acceptedMsg) = acceptAccepted state msg
                     case acceptedMsg of
                         Just m ->  (do
-                                        putMVar config acceptedState {learnedValues = (messageValue msg) : (learnedValues acceptedState)}
+                                        putMVar config acceptedState {
+                                            learnedValues = (messageValue msg) : (learnedValues acceptedState)
+                                        }
                                         broadcast acceptedState m
                                         putStrLn $ "P: " ++ show (learnedValues acceptedState)
                                     )
@@ -134,14 +147,16 @@ handleClientRequest config server = do
         _   -> putStrLn text
     handleClientRequest config server
 
--- | connectServers
+
+-- | Set up connections to other servers from params
 connectServers :: MVar ServerState -> [(String, String)] -> IO ()
 connectServers _ [] = return ()
 connectServers config ((host, portno) : hosts) = do
     forkIO $ connectServer config host portno
     connectServers config hosts
 
--- | connectServer
+
+-- | Set up connection with a single client
 connectServer :: MVar ServerState -> String -> String -> IO ()
 connectServer config host portno = do
     let port = fromIntegral (read portno :: Int)
@@ -151,7 +166,12 @@ connectServer config host portno = do
         Just handle -> do
             state <- readMVar config
             id <- handShake state handle
-            let server = Server {serverID = id, serverHandle = handle, hostName = host, portNumber = port}
+            let server = Server {
+                serverID = id, 
+                serverHandle = handle, 
+                hostName = host, 
+                portNumber = port
+            }
             serverState <- takeMVar config
             putMVar config $ saveServer serverState server
             putStrLn $ "Servers: " ++ show (1 + (length $ serverList state))
@@ -162,7 +182,8 @@ connectServer config host portno = do
             threadDelay 5000000
             connectServer config host portno
 
--- | testAddress
+
+-- | Tests if an IP:Port pair is valid
 testAddress :: String -> PortID -> IO (Maybe Handle)
 testAddress host port = do
     result <- try $ connectTo host port
@@ -170,17 +191,16 @@ testAddress host port = do
         Left (SomeException e) -> return Nothing
         Right h -> return $ Just h
 
--- | sendID
-sendID :: ServerState -> (Handle -> IO ())
-sendID state = send (localID state)
 
--- | handShake
+-- | Exchange IDs with another server
 handShake :: ServerState -> Handle -> IO String
 handShake state handle = do
-    sendID state handle
+    send (localID state) handle
     hGetLine handle
 
--- | mainProcess
+
+-- | Gets input from user and starts a Paxos instance with a prepare request
+-- | User input can be numbers
 mainProcess :: MVar ServerState -> IO ()
 mainProcess config = do
     line <- getLine

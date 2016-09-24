@@ -19,9 +19,6 @@ spec =
         describe "parseMessage" $ do
             it "parses message" $ property $
                 \x -> x == (x :: Int)
-        describe "checkConnection" $ do
-            it "checks connection" $ property $
-                \x -> x == (x :: Int)
         describe "saveServer" $ do
             it "saves server" $ property $
                 \x -> x == (x :: Int)
