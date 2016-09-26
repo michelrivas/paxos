@@ -20,15 +20,17 @@ Run multiple instances of the program, specifying IP address and port of the oth
 
 #### Unix
 ```bash
-$ dist/build/paxos/paxos localhost
+$ dist/build/paxos/paxos.exe localhost:5555 localhost:6666 localhost:7777
+$ dist/build/paxos/paxos.exe localhost:6666 localhost:7777
+$ dist/build/paxos/paxos.exe localhost:7777
 ```
 
 #### Windows
 
 ```bash
-$ dist/build/paxos/paxos.exe localhost:5555 localhost:6666 localhost:7777
-$ dist/build/paxos/paxos.exe localhost:6666 localhost:7777
-$ dist/build/paxos/paxos.exe localhost:7777
+$ start dist/build/paxos/paxos.exe localhost:5555 localhost:6666 localhost:7777
+$ start dist/build/paxos/paxos.exe localhost:6666 localhost:7777
+$ start dist/build/paxos/paxos.exe localhost:7777
 ```
 or
 
