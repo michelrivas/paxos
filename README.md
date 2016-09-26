@@ -10,7 +10,7 @@ Instructions
 ### Install dependencies and compile
 
 ```bash
-$ cabal update && cabal install --only-dependencies
+$ cabal update && cabal install --only-dependencies --enable-tests
 $ cabal build
 ```
 
@@ -47,3 +47,8 @@ $ docker-compose up
 
 To start a round of the algorithm you can enter a number in any console where the program is running
 
+### Tests
+
+```bash
+$ runhaskell -isrc -itest test/Spec.hs
+```
